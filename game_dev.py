@@ -5,8 +5,8 @@ from sys import exit
 # This function use to show the time in game which is our score system
 #we created variable valued with 0 so every time the or if the player presses the keyinputs the value of time.ticks will reset to 0, we subtract 0 on the current game time to reset the value of the current time.
 def display_score():
-    current_t = pygame.time.get_ticks() - start_time 
-    score_surf = test_font.render(f'{current_t}',False,(0,0,0))
+    current_t = int(pygame.time.get_ticks() / 1000) - start_time 
+    score_surf = test_font.render(f'SCORE: {current_t}',False,(0,0,0))
     score_rect = score_surf.get_rect(center = (400, 50))
     screen.blit(score_surf,score_rect)
 
@@ -23,7 +23,7 @@ clock = pygame.time.Clock()
 test_font = pygame.font.Font('Fonts/Pixeltype.ttf', 50)
 # We use render() this method use to render any text surfaces and it needs some inputs whic are the ("TEXT", ANTI ALIAZING COUNT U WANT, "COLOR OF THE TEXT")
 
-game_active = True
+game_active = False
 start_time = 0
 #score_surf = test_font.render('My Game', False, (0, 0, 0))
 #score_rect = score_surf.get_rect(center = (400, 50))
@@ -43,6 +43,13 @@ Player_surf = pygame.image.load('Graphics/player/player_walk_1.png').convert_alp
 #pygame.rect() use to create a rectangle for a certain image which needs this inputs (lect,top,width,height)
 player_rectangle = Player_surf.get_rect(midbottom = (80, 300))
 player_grav = 0
+
+#Intro Screen
+#This surface use to create a intro to start the game and we call this surface under the game active condition!
+
+player_stand = pygame.image.load('Graphics/player/player_stand.png').convert_alpha()
+player_stand_scaled= pygame.transform.scale(player_stand, (200, 400))
+player_stand_rect = player_stand_scaled.get_rect(center = (400,200))
 
 
 
@@ -74,7 +81,8 @@ while True:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 game_active = True
                 snail_rect.left = 800
-                start_time = pygame.time.get_ticks()
+                start_time = int(pygame.time.get_ticks() / 1000) 
+                
     if game_active:       
         #we use .blit() to call out the created surface that we named(test_surface) (block image transfer)       
         screen.blit(sky_surf,(0,0) )
@@ -86,7 +94,7 @@ while True:
         display_score()
 
         #we use .x() so the coordinates of the snail turns left reducing the value by 3 so it can reach the default value of 0
-        snail_rect.x -= 4
+        snail_rect.x -= 5
         #in this condition we use the method .right() wiht the value of <= 0 to make the object continue turning left if it hits the value of 800 in coordinate.
         if snail_rect.right <= 0: snail_rect.left = 800
 
@@ -105,7 +113,9 @@ while True:
         if snail_rect.colliderect(player_rectangle):
             game_active = False
     else:
-        screen.fill('Yellow')
+        screen.fill((94,129,162))
+        screen.blit(player_stand_scaled,player_stand_rect)
+
 
     #inside this loop we draw all of our elements 
     # and update everything that insides the game
