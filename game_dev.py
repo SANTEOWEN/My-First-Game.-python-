@@ -1,5 +1,6 @@
 import pygame
 from sys import exit
+from random import randint
 
 #x = width (width always turns left and right) y = height (height always turns up and down)
 # This function use to show the time in game which is our score system
@@ -9,6 +10,27 @@ def display_score():
     score_surf = test_font.render(f'SCORE: {current_t}',False,(0,0,0))
     score_rect = score_surf.get_rect(center = (400, 50))
     screen.blit(score_surf,score_rect)
+    # we use return method to return any value from the varaiable current_t()
+    return current_t
+
+#
+def obs_movement(obs_list):
+    #we first need to check if theres something in the list
+    if obs_list:
+        #for every obstacle_rectangles on the obstacle list we are moving every single obs by every 5 secs. 
+        for obs_rect in obs_list:
+            obs_rect.x -= 5
+
+            #Now we created a condition obs_rect is not at the bottom 300 the snail will spawn if its not the fly will spawn
+            if obs_rect.bottom == 300:screen.blit(snail_surf, obs_rect)
+            else: screen.blit(fly_surf,obs_rect)
+                
+        #we copy the existing item(rect) on the list every time the x greater than -100
+        # we are only going to copy every single item on the list if the condition is true that the x attribute is greater than 0
+        obs_list = [obstacle for obstacle in obs_list if obstacle.x > -100]
+        #Now we need a global scope for returning a new list.
+        return obs_list
+    else: return []
 
 
 #init() = it starts the pygame
@@ -25,6 +47,8 @@ test_font = pygame.font.Font('Fonts/Pixeltype.ttf', 50)
 
 game_active = False
 start_time = 0
+#then we created a especific variable to pin out the values from the function called display()
+score = 0
 #score_surf = test_font.render('My Game', False, (0, 0, 0))
 #score_rect = score_surf.get_rect(center = (400, 50))
 
@@ -36,7 +60,10 @@ ground_surf = pygame.image.load('Graphics/ground.png').convert()
 
 #Enemy Surface 
 snail_surf = pygame.image.load('Graphics/snail/snail1.png').convert_alpha()
-snail_rect = snail_surf.get_rect(midbottom = (600,300))
+
+fly_surf = pygame.image.load('Graphics/fly/fly1.png').convert_alpha()
+
+obs_rect_list = []
 
 #Player Surface/Player Rectangle
 Player_surf = pygame.image.load('Graphics/player/player_walk_1.png').convert_alpha()
@@ -58,6 +85,12 @@ game_name_rect = game_name.get_rect(center = (400,70))
 
 game_message = test_font.render("Press space to run", False, (111,196,169))
 game_message_rect = game_message.get_rect(center = (415, 330))
+
+#-----------------------------------------TIMER for the game events----------------------------------------------------#
+
+obs_timer = pygame.USEREVENT + 1
+#set_timer() needs 2 different arguments, 1. the event you want to trigger 2. how often we want it to trigger the event in mille seconds
+pygame.time.set_timer(obs_timer,1500)
 
 #---------------------------------------- EVENT/LOOPS SECTION -------------------------------------#
 
@@ -87,29 +120,42 @@ while True:
             #This statement serves as the restart button everytime it hits the space key it will restart the game after the collision of enemy_rectangle.
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 game_active = True
-                snail_rect.left = 800
                 start_time = int(pygame.time.get_ticks() / 1000) 
+
+
+
+        if event.type == obs_timer and game_active:
+            # we use the randint to randomize this 2 obstacle so everytime the randint method gives 1 the snail will pop out and if it gives us a 0 the fly will pop out.
+            if randint(0,2):
+                obs_rect_list.append(snail_surf.get_rect(midbottom = (randint(900,1100),300)))
+            else:
+                obs_rect_list.append(fly_surf.get_rect(midbottom = (randint(900,1100),210)))
 
     #inside this loop we draw all of our elements             
     if game_active:       
         #we use .blit() to call out the created surface that we named(test_surface) (block image transfer)       
         screen.blit(sky_surf,(0,0) )
         screen.blit(ground_surf,(0,300))
+
         #pygame.draw() use to create/draw any shapes on any part of the screen using this attributes (name of the screen, color, what surface)
         #pygame.draw.rect(screen, '#f1cbff', score_rect)
         #pygame.draw.rect(screen, '#f1cbff', score_rect,20)
         #screen.blit(score_surf, (score_rect))
-        display_score()
+
+        score = display_score()
 
         #we use .x() so the coordinates of the snail turns left reducing the value by 3 so it can reach the default value of 0
-        snail_rect.x -= 5
+        #snail_rect.x -= 5
+
         #in this condition we use the method .right() wiht the value of <= 0 to make the object continue turning left if it hits the value of 800 in coordinate.
-        if snail_rect.right <= 0: snail_rect.left = 800
-
         #we increment the value of the X position of the snail to move it on the left side of the display
-        screen.blit(snail_surf, snail_rect)
 
-        #player
+        #if snail_rect.right <= 0: snail_rect.left = 800
+
+
+        #screen.blit(snail_surf, snail_rect)
+
+        #PLAYER_GRAVITY_PYSHICS
         #this part also serves as the gravity physics of the player!
         player_grav += 1
         player_rectangle.y += player_grav 
@@ -117,18 +163,30 @@ while True:
         if player_rectangle.bottom >= 300: player_rectangle.bottom = 300
         screen.blit(Player_surf, player_rectangle)
 
-        # Collisions
-        if snail_rect.colliderect(player_rectangle):
-            game_active = False
+        #OBSTACLE MOVEMENT
+        # first we run the function [obs_movement] 
+        # then it will take the obstacle rect list which is under the game event loop then move every single rect a b it further to the left.
+        # after all of process is done we override the rect_list to continuesly update the list inside the function
+        obs_rect_list = obs_movement(obs_rect_list)
+            
     else:
         screen.fill((94,129,162))
-        screen.blit(player_stand,player_stand_rect) #4. now we are all drawing the image that we created by using the blit() function
+        screen.blit(player_stand,player_stand_rect)
+        
+        score_message = test_font.render(f'Your Score is: {score}', False,(111,196,169))
+        score_message_rect = score_message.get_rect(center = (400, 330))
+
         screen.blit(game_name, game_name_rect)
-        screen.blit(game_message, game_message_rect)
+        # now we created a condition state that everytime the players dies the score will show up after it hits any enemy
+        if score == 0:
+            screen.blit(game_message, game_message_rect)
+        else:
+            screen.blit(score_message, score_message_rect)
+        
     # and update everything that insides the game
     pygame.display.update()
     #clock.tick tells the loop to run a certain frame rate which in our case we can only run (60fps)
-    clock.tick(60)
+    clock.tick(75)
     
 
 
