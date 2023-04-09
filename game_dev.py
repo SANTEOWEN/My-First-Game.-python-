@@ -32,6 +32,14 @@ def obs_movement(obs_list):
         return obs_list
     else: return []
 
+# This  function detects if the player collides on the enemy(obstacle) surface, if the player surface collides on the enemy surface it will end the game and go on the retry game state.
+def collisions(player, obstacles):
+    if obstacles:
+        for obs_rect in obstacles:
+            # this conditions tells us if the player colides on obstacle rectangle(enemy) the game will end and will go on retry state.
+            if player.colliderect(obs_rect): return False
+    return True
+
 
 #init() = it starts the pygame
 pygame.init()
@@ -68,7 +76,7 @@ obs_rect_list = []
 #Player Surface/Player Rectangle
 Player_surf = pygame.image.load('Graphics/player/player_walk_1.png').convert_alpha()
 #pygame.rect() use to create a rectangle for a certain image which needs this inputs (lect,top,width,height)
-player_rectangle = Player_surf.get_rect(midbottom = (80, 300))
+player_rect = Player_surf.get_rect(midbottom = (80, 300))
 player_grav = 0
 
 #Intro Screen
@@ -108,13 +116,13 @@ while True:
         if game_active:
             #we use this event loop to know if the mouse collides on the player rectangle.
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if player_rectangle.collidepoint(event.pos) and player_rectangle.bottom >= 300:
+                if player_rect.collidepoint(event.pos) and player_rect.bottom >= 300:
                     player_grav = -20
                 
             #this event loop us to get key inputs using the combined pygame.key() and eventloop method   
             if event.type == pygame.KEYDOWN:
                 #this combined conditions tells us that the character can only jump if its on the ground surface. 
-                if event.key == pygame.K_SPACE and player_rectangle.bottom >= 300:
+                if event.key == pygame.K_SPACE and player_rect.bottom >= 300:
                     player_grav = -20
         else:
             #This statement serves as the restart button everytime it hits the space key it will restart the game after the collision of enemy_rectangle.
@@ -158,21 +166,35 @@ while True:
         #PLAYER_GRAVITY_PYSHICS
         #this part also serves as the gravity physics of the player!
         player_grav += 1
-        player_rectangle.y += player_grav 
+        player_rect.y += player_grav 
         #this conditional statement use to make the character stays on the surface and not fall down because of the gravity variable.
-        if player_rectangle.bottom >= 300: player_rectangle.bottom = 300
-        screen.blit(Player_surf, player_rectangle)
+        if player_rect.bottom >= 300: player_rect.bottom = 300
+        screen.blit(Player_surf, player_rect)
 
         #OBSTACLE MOVEMENT
         # first we run the function [obs_movement] 
         # then it will take the obstacle rect list which is under the game event loop then move every single rect a b it further to the left.
         # after all of process is done we override the rect_list to continuesly update the list inside the function
         obs_rect_list = obs_movement(obs_rect_list)
+
+        #COLLISIONS ON ENEMIES
+        #First the function will run and dectet the collisions
+        # then if the detection went true the game state will go retry mode
+        # If the collision turns false  the game state will turn on retry mode and if doesnt it will continue the game
+        game_active = collisions(player_rect, obs_rect_list)
             
     else:
         screen.fill((94,129,162))
         screen.blit(player_stand,player_stand_rect)
         
+        
+        # we use the clear() method to clear all of the entity created so it will not loop the game again and again.
+        obs_rect_list.clear()
+        # ------- we reinput the position of the player so it will go back on its default position ------- #
+        player_rect.midbottom = (80,300) 
+        # ------- same as the gravity so the position of the character still the same ------- #
+        player_grav = 0
+
         score_message = test_font.render(f'Your Score is: {score}', False,(111,196,169))
         score_message_rect = score_message.get_rect(center = (400, 330))
 
