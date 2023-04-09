@@ -2,6 +2,13 @@ import pygame
 from sys import exit
 from random import randint
 
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.image.load('Graphics/player/player_walk_1.png').convert_alpha()
+        self.rect = self.image.get_rect(midbottom =(200,300))
+        
 #x = width (width always turns left and right) y = height (height always turns up and down)
 # This function use to show the time in game which is our score system
 #we created variable valued with 0 so every time the or if the player presses the keyinputs the value of time.ticks will reset to 0, we subtract 0 on the current game time to reset the value of the current time.
@@ -13,7 +20,6 @@ def display_score():
     # we use return method to return any value from the varaiable current_t()
     return current_t
 
-#
 def obs_movement(obs_list):
     #we first need to check if theres something in the list
     if obs_list:
@@ -40,6 +46,21 @@ def collisions(player, obstacles):
             if player.colliderect(obs_rect): return False
     return True
 
+def player_animation():
+    global player_surf, player_index
+
+    if player_rect.bottom < 300:
+        player_surf = player_jump
+    else:
+        #We incremented +0.1 to slowly move the animation by 0.1 pixels under the player_index so if the player moves it slowly moves by 0.1 milleseconds
+        player_index += 0.1
+
+        # this condition tells us that if the player_index becomes greater than or equal to the length of player walk we simple brings it back to its default value which is 0 so it can loop back to back
+        # the player  index went too large this condition statement down here will bring its value back on default.
+        if player_index >= len(player_walk): player_index = 0
+
+        player_surf = player_walk[int(player_index)]
+
 
 #init() = it starts the pygame
 pygame.init()
@@ -57,26 +78,42 @@ game_active = False
 start_time = 0
 #then we created a especific variable to pin out the values from the function called display()
 score = 0
+player = Player()
 #score_surf = test_font.render('My Game', False, (0, 0, 0))
 #score_rect = score_surf.get_rect(center = (400, 50))
-
 #we create a surface for the game.
 
 #we have the sky_surface() variable to set the background of the game, pygame.image.load() use to load the imported images so that pygame can use it.
 sky_surf = pygame.image.load('Graphics/Sky.png').convert()
 ground_surf = pygame.image.load('Graphics/ground.png').convert()
 
-#Enemy Surface 
-snail_surf = pygame.image.load('Graphics/snail/snail1.png').convert_alpha()
+#snail
+snail_frame_1 = pygame.image.load('Graphics/snail/snail1.png').convert_alpha()
+snail_frame_2 = pygame.image.load('Graphics/snail/snail2.png').convert_alpha()
+snail_frames = [snail_frame_1, snail_frame_2]
+snail_frame_index = 0
+snail_surf = snail_frames[snail_frame_index]
 
-fly_surf = pygame.image.load('Graphics/fly/fly1.png').convert_alpha()
+
+#fly
+fly_frame1 = pygame.image.load('Graphics/Fly/Fly1.png').convert_alpha()
+fly_frame2 = pygame.image.load('Graphics/Fly/Fly2.png').convert_alpha()
+fly_frames = [fly_frame1, fly_frame2]
+fly_frame_index = 0
+fly_surf = fly_frames[fly_frame_index]
 
 obs_rect_list = []
 
 #Player Surface/Player Rectangle
-Player_surf = pygame.image.load('Graphics/player/player_walk_1.png').convert_alpha()
 #pygame.rect() use to create a rectangle for a certain image which needs this inputs (lect,top,width,height)
-player_rect = Player_surf.get_rect(midbottom = (80, 300))
+Player_walk1 = pygame.image.load('Graphics/player/player_walk_1.png').convert_alpha()
+Player_walk2 = pygame.image.load('Graphics/player/player_walk_2.png').convert_alpha()
+player_walk = [Player_walk1, Player_walk2]
+player_index = 0
+player_jump = pygame.image.load('Graphics/player/jump.png').convert_alpha()
+
+player_surf = player_walk[player_index]
+player_rect = player_surf.get_rect(midbottom = (80, 300))
 player_grav = 0
 
 #Intro Screen
@@ -99,6 +136,12 @@ game_message_rect = game_message.get_rect(center = (415, 330))
 obs_timer = pygame.USEREVENT + 1
 #set_timer() needs 2 different arguments, 1. the event you want to trigger 2. how often we want it to trigger the event in mille seconds
 pygame.time.set_timer(obs_timer,1500)
+
+snail_animation_timer = pygame.USEREVENT + 2
+pygame.time.set_timer(snail_animation_timer, 500)
+
+fly_animation_timer = pygame.USEREVENT + 3
+pygame.time.set_timer(fly_animation_timer, 200)
 
 #---------------------------------------- EVENT/LOOPS SECTION -------------------------------------#
 
@@ -130,14 +173,24 @@ while True:
                 game_active = True
                 start_time = int(pygame.time.get_ticks() / 1000) 
 
-
-
-        if event.type == obs_timer and game_active:
+        if game_active:
+            if event.type == obs_timer:
             # we use the randint to randomize this 2 obstacle so everytime the randint method gives 1 the snail will pop out and if it gives us a 0 the fly will pop out.
-            if randint(0,2):
-                obs_rect_list.append(snail_surf.get_rect(midbottom = (randint(900,1100),300)))
-            else:
-                obs_rect_list.append(fly_surf.get_rect(midbottom = (randint(900,1100),210)))
+                if randint(0,2):
+                    obs_rect_list.append(snail_surf.get_rect(midbottom = (randint(900,1100),300)))
+                else:
+                    obs_rect_list.append(fly_surf.get_rect(midbottom = (randint(900,1100),210)))
+
+            if event.type == snail_animation_timer:
+                if snail_frame_index == 0: snail_frame_index = 1
+                else: snail_frame_index = 0
+                snail_surf = snail_frames[snail_frame_index]
+    
+            if event.type == fly_animation_timer:
+                if fly_frame_index == 0: fly_frame_index = 1
+                else: fly_frame_index = 0
+                fly_surf = fly_frames[fly_frame_index]
+    
 
     #inside this loop we draw all of our elements             
     if game_active:       
@@ -168,8 +221,10 @@ while True:
         player_grav += 1
         player_rect.y += player_grav 
         #this conditional statement use to make the character stays on the surface and not fall down because of the gravity variable.
-        if player_rect.bottom >= 300: player_rect.bottom = 300
-        screen.blit(Player_surf, player_rect)
+        if player_rect.bottom >= 300: 
+            player_rect.bottom = 300
+        player_animation()
+        screen.blit(player_surf, player_rect)
 
         #OBSTACLE MOVEMENT
         # first we run the function [obs_movement] 
@@ -208,7 +263,7 @@ while True:
     # and update everything that insides the game
     pygame.display.update()
     #clock.tick tells the loop to run a certain frame rate which in our case we can only run (60fps)
-    clock.tick(75)
+    clock.tick(60)
     
 
 
